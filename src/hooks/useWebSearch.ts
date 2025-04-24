@@ -403,10 +403,10 @@ function useWebSearch() {
     const params = {
       q: query,
       categories: ["general", "web"],
-      engines: ["google", "bing", "duckduckgo", "brave", "arxiv"],
+      engines: ["bing", "duckduckgo", "brave", "arxiv"],
       lang: "auto",
       format: "json",
-      autocomplete: "google",
+      autocomplete: "bing",
       ...options,
     };
     const searchQuery = new URLSearchParams();
