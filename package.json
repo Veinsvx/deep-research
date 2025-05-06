@@ -1,7 +1,7 @@
 {
   "name": "临科深思助手",
   "description": "Use any LLMs (Large Language Models) for Deep Research.",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -25,7 +25,7 @@
     "@radix-ui/react-dropdown-menu": "^2.1.6",
     "@radix-ui/react-label": "^2.1.2",
     "@radix-ui/react-popover": "^1.1.6",
-    "@radix-ui/react-scroll-area": "^1.2.6",
+    "@radix-ui/react-scroll-area": "^1.2.8",
     "@radix-ui/react-select": "^2.1.6",
     "@radix-ui/react-separator": "^1.1.2",
     "@radix-ui/react-slider": "^1.2.3",
