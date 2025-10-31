@@ -16,4 +16,4 @@ export const BOCHA_BASE_URL = "https://api.bochaai.com";
 export const SEARXNG_BASE_URL = "http://localhost:8080";
 
 export const EXT_BACKEND_BASE_URL =
-  process.env.NEXT_PUBLIC_EXT_BACKEND_BASE_URL || "10.100.178.237:9765";
+  process.env.NEXT_PUBLIC_EXT_BACKEND_BASE_URL || "http://10.100.178.237:9765";

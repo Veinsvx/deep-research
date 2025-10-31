@@ -4,6 +4,9 @@ import { PHASE_PRODUCTION_BUILD } from "next/constants.js";
 import pkg from "./package.json";
 
 const BUILD_MODE = process.env.NEXT_PUBLIC_BUILD_MODE;
+const RAW_BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH?.trim();
+const RAW_ASSET_PREFIX = process.env.NEXT_PUBLIC_ASSET_PREFIX?.trim();
+//const RAW_BASE_PATH = "/ext/deep-think-assistant";
 // AI provider API base url
 const API_PROXY_BASE_URL = process.env.API_PROXY_BASE_URL || "";
 const GOOGLE_GENERATIVE_AI_API_BASE_URL =
@@ -52,10 +55,27 @@ export default async function Config(phase: string) {
     transpilePackages: ["pdfjs-dist", "mermaid"],
   };
 
+  const normalizedBasePath =
+    RAW_BASE_PATH && RAW_BASE_PATH !== "/"
+      ? `/${RAW_BASE_PATH.replace(/^\/+|\/+$/g, "")}`
+      : undefined;
+  const normalizedAssetPrefix =
+    RAW_ASSET_PREFIX && RAW_ASSET_PREFIX !== "/"
+      ? RAW_ASSET_PREFIX.replace(/\/+$/, "")
+      : undefined;
+  if (normalizedBasePath) {
+    nextConfig.basePath = normalizedBasePath;
+  }
+  if (normalizedAssetPrefix) {
+    nextConfig.assetPrefix = normalizedAssetPrefix;
+  } else if (normalizedBasePath) {
+    nextConfig.assetPrefix = normalizedBasePath;
+  }
+
   if (BUILD_MODE === "export") {
     nextConfig.output = "export";
     // Only used for static deployment, the default deployment directory is the root directory
-    nextConfig.basePath = "";
+    nextConfig.basePath = normalizedBasePath ?? "";
     // Statically exporting a Next.js application via `next export` disables API routes and middleware.
     nextConfig.webpack = (config) => {
       config.module.rules.push({
