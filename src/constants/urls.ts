@@ -14,3 +14,6 @@ export const FIRECRAWL_BASE_URL = "https://api.firecrawl.dev";
 export const EXA_BASE_URL = "https://api.exa.ai";
 export const BOCHA_BASE_URL = "https://api.bochaai.com";
 export const SEARXNG_BASE_URL = "http://localhost:8080";
+
+export const EXT_BACKEND_BASE_URL =
+  process.env.NEXT_PUBLIC_EXT_BACKEND_BASE_URL || "10.100.178.237:9765";

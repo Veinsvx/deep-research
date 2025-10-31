@@ -4,6 +4,7 @@ import {
   useState,
   useCallback,
   useMemo,
+  useEffect,
   type ReactNode,
 } from "react";
 import { useTranslation } from "react-i18next";
@@ -50,7 +51,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import useModel from "@/hooks/useModelList";
-import { useSettingStore } from "@/store/setting";
+import { useSettingStore, type SettingStore } from "@/store/setting";
 import {
   GEMINI_BASE_URL,
   OPENROUTER_BASE_URL,
@@ -66,6 +67,7 @@ import {
   EXA_BASE_URL,
   BOCHA_BASE_URL,
   SEARXNG_BASE_URL,
+  EXT_BACKEND_BASE_URL,
 } from "@/constants/urls";
 import locales from "@/constants/locales";
 import {
@@ -223,6 +225,7 @@ function Setting({ open, onClose }: SettingProps) {
   const { modelList, refresh } = useModel();
   const pwaInstall = usePWAInstall();
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [hasAutoConfigured, setHasAutoConfigured] = useState<boolean>(false);
 
   const thinkingModelList = useMemo(() => {
     const { provider } = useSettingStore.getState();
@@ -309,6 +312,129 @@ function Setting({ open, onClose }: SettingProps) {
     }
     if (pwaInstall) await pwaInstall();
   };
+  useEffect(() => {
+    if (hasAutoConfigured) return;
+    if (typeof window === "undefined") return;
+
+    const emailParam = new URLSearchParams(window.location.search).get("email");
+    if (!emailParam) {
+      setHasAutoConfigured(true);
+      return;
+    }
+
+    let cancelled = false;
+
+    function buildCandidateUrls(email: string): string[] {
+      const normalizedEmail = encodeURIComponent(email);
+      const path = `/ext/api/account/slot?email=${normalizedEmail}`;
+      const candidates: string[] = [];
+      const seen = new Set<string>();
+
+      const addCandidate = (url: string | null | undefined) => {
+        if (!url) return;
+        const cleaned = url.replace(/\/+$/, "");
+        if (seen.has(cleaned)) return;
+        seen.add(cleaned);
+        candidates.push(cleaned);
+      };
+
+      const envBase = EXT_BACKEND_BASE_URL.trim();
+      if (envBase) {
+        addCandidate(`${envBase.replace(/\/+$/, "")}${path}`);
+      }
+
+      try {
+        const current = new URL(window.location.href);
+        if (current.port !== "9765") {
+          addCandidate(
+            `${current.protocol}//${current.hostname}:9765${path}`
+          );
+        }
+        addCandidate(`${current.origin}${path}`);
+      } catch {
+        // ignore URL parse failures
+      }
+
+      addCandidate(path);
+
+      return candidates;
+    }
+
+    async function fetchAccountSlot() {
+      const urls = buildCandidateUrls(emailParam);
+
+      for (const url of urls) {
+        try {
+          const response = await fetch(url);
+          if (cancelled) return;
+
+          if (response.ok) {
+            const data: { api_key?: string; url?: string | null } =
+              await response.json();
+
+            const updates: Partial<SettingStore> = {
+              provider: "openaicompatible",
+              mode: "local",
+              openAICompatibleThinkingModel: "o3",
+              openAICompatibleNetworkingModel: "gpt-4o",
+            };
+
+            form.setValue("provider", "openaicompatible");
+            form.setValue("mode", "local");
+            form.setValue("openAICompatibleThinkingModel", "o3");
+            form.setValue("openAICompatibleNetworkingModel", "gpt-4o");
+
+            const resolvedKey =
+              typeof data.api_key === "string" ? data.api_key.trim() : "";
+            updates.openAICompatibleApiKey = resolvedKey;
+            form.setValue("openAICompatibleApiKey", resolvedKey);
+
+            const resolvedUrl =
+              typeof data.url === "string" ? data.url.trim() : "";
+            updates.openAICompatibleApiProxy = resolvedUrl;
+            form.setValue("openAICompatibleApiProxy", resolvedUrl);
+
+            update(updates);
+            toast.success("已根据邮箱自动填充密钥信息。");
+            setHasAutoConfigured(true);
+            return;
+          }
+
+          if (response.status === 404) {
+            const contentType = response.headers.get("content-type") ?? "";
+            if (contentType.includes("application/json")) {
+              let detail = "未找到该邮箱对应的密钥，请确认后重试。";
+              try {
+                const body = (await response.json()) as { detail?: unknown };
+                if (typeof body.detail === "string" && body.detail) {
+                  detail = body.detail;
+                }
+              } catch {
+                // ignore parse errors
+              }
+
+              toast.info(detail);
+              setHasAutoConfigured(true);
+              return;
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch account slot", error);
+        }
+      }
+
+      if (!cancelled) {
+        toast.error("自动获取密钥失败，请手动填写。");
+        setHasAutoConfigured(true);
+      }
+    }
+
+    fetchAccountSlot();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [form, hasAutoConfigured, update]);
 
   function handleClose(open: boolean) {
     if (!open) onClose();
