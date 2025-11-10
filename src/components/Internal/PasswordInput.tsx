@@ -10,7 +10,7 @@ import { cn } from "@/utils/style";
 type Props = ComponentProps<"input">;
 
 function PasswordInput(
-  { className, type: _type, ...props }: Props,
+  { className, ...props }: Props,
   forwardedRef: ForwardedRef<HTMLInputElement>
 ) {
   return (
