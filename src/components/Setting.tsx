@@ -321,6 +321,7 @@ function Setting({ open, onClose }: SettingProps) {
       setHasAutoConfigured(true);
       return;
     }
+    const resolvedEmail = emailParam;
 
     let cancelled = false;
 
@@ -360,8 +361,8 @@ function Setting({ open, onClose }: SettingProps) {
       return candidates;
     }
 
-    async function fetchAccountSlot() {
-      const urls = buildCandidateUrls(emailParam);
+    async function fetchAccountSlot(email: string) {
+      const urls = buildCandidateUrls(email);
 
       for (const url of urls) {
         try {
@@ -429,7 +430,7 @@ function Setting({ open, onClose }: SettingProps) {
       }
     }
 
-    fetchAccountSlot();
+    fetchAccountSlot(resolvedEmail);
 
     return () => {
       cancelled = true;
